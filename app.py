@@ -9,7 +9,7 @@ MODEL_FILENAME = "best_fraud_detection_model.joblib"
 
 @st.cache_resource
 
-        loaded_model = joblib.load(best_fraud_detection_model.joblib)
+loaded_model = joblib.load(best_fraud_detection_model.joblib)
 
 
 
