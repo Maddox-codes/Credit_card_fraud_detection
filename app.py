@@ -6,24 +6,11 @@ import os
 
 MODEL_FILENAME = "best_fraud_detection_model.joblib"
 
-MODEL_PATH = os.path.join('/content/drive/My Drive/Colab Notebooks/credit card fraud detection /', MODEL_FILENAME)
 
 @st.cache_resource
-def load_model(path):
-    """
-    Loads the trained model from the specified path.
-    Uses st.cache_resource to load the model only once.
-    """
-    if not os.path.exists(path):
-        st.error(f"Error: Model file not found at '{path}'.")
-        st.error("Please ensure the model file is in the correct location.")
-        st.stop() 
-    try:
-        loaded_model = joblib.load(path)
-        return loaded_model
-    except Exception as e:
-        st.error(f"An error occurred while loading the model: {e}")
-        st.stop() 
+
+        loaded_model = joblib.load(best_fraud_detection_model.joblib)
+
 
 
 ALL_EXPECTED_FEATURES = [f'V{i}' for i in range(1, 29)] + ['Time', 'Amount'] + [f'dummy_V{i}' for i in range(29, 34)]
