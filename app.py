@@ -1,4 +1,3 @@
-
 import streamlit as st
 import joblib
 import pandas as pd
@@ -11,7 +10,7 @@ def load_model(filename):
         model = joblib.load(filename)
         return model
     except FileNotFoundError:
-        st.error(f"Model file not found. Please ensure '{filename}' is in the same folder as the app script.")
+        st.error(f"Model file not found. Ensure '{filename}' is in the same folder.")
         return None
     except Exception as e:
         st.error(f"An error occurred while loading the model: {e}")
@@ -21,38 +20,67 @@ model = load_model(MODEL_FILENAME)
 
 ALL_EXPECTED_FEATURES = [f'V{i}' for i in range(1, 29)] + ['Time', 'Amount'] + [f'dummy_V{i}' for i in range(29, 34)]
 
+FEATURE_LABELS = {
+    'Time': ("Time Since First Transaction", "Enter the seconds elapsed between this transaction and the first one in the dataset."),
+    'Amount': ("Transaction Amount", "Enter the monetary value of the transaction (e.g., 129.99)."),
+    'V1': ("Transaction Profile 1", "Anonymized feature representing a core aspect of the transaction's profile."),
+    'V2': ("Transaction Profile 2", "Anonymized feature representing a core aspect of the transaction's profile."),
+    'V3': ("Transaction Profile 3", "Anonymized feature representing a core aspect of the transaction's profile."),
+    'V4': ("Behavioral Indicator 1", "Anonymized feature potentially indicating a deviation from normal spending behavior."),
+    'V5': ("Transaction Profile 4", "Anonymized feature representing a core aspect of the transaction's profile."),
+    'V6': ("Transaction Profile 5", "Anonymized feature representing a core aspect of the transaction's profile."),
+    'V7': ("Transaction Profile 6", "Anonymized feature representing a core aspect of the transaction's profile."),
+    'V8': ("Contextual Data 1", "Anonymized feature related to the transaction's context."),
+    'V9': ("Transaction Profile 7", "Anonymized feature representing a core aspect of the transaction's profile."),
+    'V10': ("Behavioral Indicator 2", "Anonymized feature potentially indicating a deviation from normal spending behavior."),
+    'V11': ("Behavioral Indicator 3", "Anonymized feature potentially indicating a deviation from normal spending behavior."),
+    'V12': ("Behavioral Indicator 4", "Anonymized feature potentially indicating a deviation from normal spending behavior."),
+    'V13': ("Contextual Data 2", "Anonymized feature related to the transaction's context."),
+    'V14': ("Behavioral Indicator 5", "Anonymized feature potentially indicating a deviation from normal spending behavior."),
+    'V15': ("Contextual Data 3", "Anonymized feature related to the transaction's context."),
+    'V16': ("Behavioral Indicator 6", "Anonymized feature potentially indicating a deviation from normal spending behavior."),
+    'V17': ("Behavioral Indicator 7", "Anonymized feature potentially indicating a deviation from normal spending behavior."),
+    'V18': ("Behavioral Indicator 8", "Anonymized feature potentially indicating a deviation from normal spending behavior."),
+    'V19': ("Contextual Data 4", "Anonymized feature related to the transaction's context."),
+    'V20': ("Contextual Data 5", "Anonymized feature related to the transaction's context."),
+    'V21': ("Contextual Data 6", "Anonymized feature related to the transaction's context."),
+    'V22': ("Internal Risk Factor 1", "Anonymized feature likely related to an internal risk assessment score."),
+    'V23': ("Internal Risk Factor 2", "Anonymized feature likely related to an internal risk assessment score."),
+    'V24': ("Internal Risk Factor 3", "Anonymized feature likely related to an internal risk assessment score."),
+    'V25': ("Internal Risk Factor 4", "Anonymized feature likely related to an internal risk assessment score."),
+    'V26': ("Internal Risk Factor 5", "Anonymized feature likely related to an internal risk assessment score."),
+    'V27': ("Internal Risk Factor 6", "Anonymized feature likely related to an internal risk assessment score."),
+    'V28': ("Internal Risk Factor 7", "Anonymized feature likely related to an internal risk assessment score."),
+}
+
 st.set_page_config(layout="wide")
 
-st.title("💳 Credit Card Fraud Detection")
+st.title("💳 Credit Card Fraud Detection Simulator")
 st.write(
-    "This application uses a pre-trained machine learning model to predict "
-    "whether a credit card transaction is fraudulent. Fill in the transaction details below to get a prediction."
+    "This application uses a machine learning model to predict if a transaction is fraudulent. "
+    "Fill in the details below to simulate a prediction."
 )
 
 st.header("Enter Transaction Details")
+st.info(
+    "**Note:** Most features below (e.g., 'Transaction Profile') are anonymized for privacy reasons. "
+    "The labels are illustrative placeholders to make the form easier to use.",
+    icon="ℹ️"
+)
 
 with st.form("transaction_form"):
     input_data = {}
-    
     col1, col2, col3 = st.columns(3)
     columns = [col1, col2, col3]
-
     feature_index = 0
+
     for feature in ALL_EXPECTED_FEATURES:
         if 'dummy' in feature:
             input_data[feature] = 0.0
             continue
 
+        label, help_text = FEATURE_LABELS.get(feature, (feature, f"Anonymized feature: {feature}"))
         target_col = columns[feature_index % 3]
-
-        label = feature
-        help_text = f"Anonymized feature: {feature}"
-        if feature == 'Time':
-            label = "Time"
-            help_text = "Seconds elapsed between this transaction and the first transaction in the dataset."
-        elif feature == 'Amount':
-            label = "Transaction Amount"
-            help_text = "The monetary value of the transaction."
 
         input_data[feature] = target_col.number_input(
             label=label,
@@ -67,12 +95,11 @@ with st.form("transaction_form"):
 
 if submitted and model is not None:
     input_df = pd.DataFrame([input_data])
-
     try:
         input_df = input_df[ALL_EXPECTED_FEATURES]
         prediction = model.predict(input_df)
-
         fraud_confidence = None
+
         if hasattr(model, "predict_proba"):
             prediction_proba = model.predict_proba(input_df)
             fraud_confidence = prediction_proba[0][1]
@@ -87,31 +114,19 @@ if submitted and model is not None:
             if fraud_confidence is not None:
                 st.metric(label="Confidence Score (Not Fraud)", value=f"{prediction_proba[0][0]:.2%}")
 
-        with st.expander("View Input Data"):
+        with st.expander("View Raw Input Data"):
             st.dataframe(input_df)
 
-    except KeyError as e:
-        st.error(f"Error: A feature mismatch occurred. The model expected a feature that was not provided. Details: {e}")
     except Exception as e:
         st.error(f"An error occurred during prediction: {e}")
 elif submitted and model is None:
     st.warning("Cannot perform prediction because the model is not loaded.")
 
-st.info(
-    """
-    **Disclaimer:** This is a simulator and should not be used for actual financial decisions.
-    The accuracy of the prediction depends entirely on the quality and characteristics of the model it was trained on.
-    """,
-    icon="ℹ️"
-)
-
-st.subheader("Beyond Simulation: Real-Time Fraud Detection")
+st.subheader("Beyond Simulation: How Real-Time Fraud Detection Works")
 st.markdown("""
-This application simulates a scenario where you manually input transaction details for a prediction. In a real-world setting, fraud detection systems are fully automated and operate in real-time. Here's how they typically work:
-
-* **Real-time Processing:** Transactions are analyzed instantly as they occur, without manual data entry.
-* **Message Queues:** High-volume systems use message queues (like Apache Kafka or RabbitMQ) to handle the massive stream of incoming transactions reliably.
-* **Low-Latency Models:** The machine learning models are highly optimized for speed to provide decisions in milliseconds.
-* **Feedback Loop:** The system continuously improves. When a transaction is flagged and a customer confirms it was legitimate (or vice-versa), this feedback is used to retrain and fine-tune the model, making it more accurate over time.
-* **Automated Actions:** Based on the real-time prediction, the system can trigger alerts to a fraud analyst or take immediate action, such as temporarily blocking the transaction and notifying the customer.
+In a real-world setting, fraud detection systems are fully automated and operate in milliseconds. Here's a simplified overview:
+* **Real-time Processing:** Transactions are analyzed instantly as they occur.
+* **Automated Feature Engineering:** The system automatically generates features (like spending frequency, location changes, etc.) from raw transaction data.
+* **Low-Latency Models:** The machine learning models are highly optimized for speed to provide decisions in real-time.
+* **Feedback Loop:** The system continuously learns. When a transaction is confirmed as fraud (or not), this feedback is used to retrain and improve the model.
 """)
